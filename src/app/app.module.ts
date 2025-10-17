@@ -3,10 +3,12 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { DailyAgendaComponent } from './components/daily-agenda/daily-agenda.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    DailyAgendaComponent
   ],
   imports: [
     BrowserModule,
