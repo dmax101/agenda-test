@@ -1,80 +1,87 @@
 <div class="daily-agenda-container">
-  <!-- Cabeçalho com horários -->
+  <!-- 1. Cabeçalho com horários -->
   <div class="time-header">
     <div class="groups-header" *ngIf="config.showGroups && groups.length > 0">Grupos</div>
-    <div class="time-slots">
-      <div class="time-slot" *ngFor="let timeSlot of timeSlots">
+    <div class="time-slots" #timeSlots>
+      <div class="time-slot" *ngFor="let timeSlot of timeSlotsArray">
         {{ timeSlot }}
       </div>
     </div>
   </div>
 
-  <!-- Conteúdo da agenda -->
-  <div class="agenda-content">
-    <!-- Grupos (se habilitados) -->
-    <div class="groups-container" *ngIf="config.showGroups && groups.length > 0">
-      <ng-container *ngFor="let group of groups">
-        <!-- Grupo principal -->
-        <div class="group-item" [style.background-color]="group.color || '#f0f0f0'">
-          {{ group.name }}
+  <!-- 2. Conteúdo principal com scroll sincronizado -->
+  <div class="agenda-content-wrapper" #agendaWrapper (scroll)="onMainScroll()" (click)="deselectItem()">
+    <div class="agenda-rows">
+   <div class="agenda-row-wrapper"
+     *ngFor="let rowInfo of orderedRows"
+     [ngClass]="{ 'main-group-wrapper': rowInfo.level === 0, 'subgroup-wrapper': rowInfo.level === 1, 'has-expanded': rowHasExpanded(rowInfo) }">
+        <div class="group-cell"
+             *ngIf="config.showGroups && groups.length > 0"
+             [ngClass]="{ 'main-group': rowInfo.level === 0, 'subgroup': rowInfo.level === 1 }"
+             [style.background-color]="rowInfo.color || '#f0f0f0'">
+          {{ rowInfo.name }}
         </div>
-        
-        <!-- Subgrupos (se existirem) -->
-        <ng-container *ngIf="config.showSubgroups && group.subgroups && group.subgroups.length > 0">
-          <ng-container *ngFor="let subgroup of group.subgroups">
-            <div class="subgroup-item" 
-                [style.background-color]="subgroup.color || group.color || '#f0f0f0'">
-              {{ subgroup.name }}
-            </div>
-            
-            <!-- Sub-subgrupos (se existirem) -->
-            <ng-container *ngIf="config.showSubSubgroups && subgroup.subSubgroups && subgroup.subSubgroups.length > 0">
-              <ng-container *ngFor="let subSubgroup of subgroup.subSubgroups">
-                <div class="sub-subgroup-item" 
-                    [style.background-color]="subSubgroup.color || subgroup.color || group.color || '#f0f0f0'">
-                  {{ subSubgroup.name }}
-                </div>
-              </ng-container>
-            </ng-container>
-          </ng-container>
-        </ng-container>
-      </ng-container>
-    </div>
 
-    <!-- Grade da agenda -->
-    <div class="agenda-grid" #agendaGrid (scroll)="onGridScroll($event)">
-      <!-- Linhas para cada grupo, subgrupo ou sub-subgrupo -->
-      <div class="agenda-rows-container">
-        <div class="agenda-row" *ngFor="let groupEntry of groupedItems | keyvalue" 
-             [ngClass]="{'group-row': !groupEntry.key.includes('_'), 
-                        'subgroup-row': groupEntry.key.includes('_') && !groupEntry.key.split('_')[2],
-                        'sub-subgroup-row': groupEntry.key.includes('_') && groupEntry.key.split('_')[2]}">
-          <div class="agenda-row-content">
-            <!-- Linhas de tempo -->
-            <div class="time-grid-lines">
-              <div class="time-line" *ngFor="let timeSlot of timeSlots"></div>
-            </div>
-            
-            <!-- Itens da agenda -->
-            <div class="agenda-item" 
-                *ngFor="let item of groupEntry.value" 
-                [style.top]="getItemPosition(item).top"
-                [style.left]="getItemPosition(item).left"
-                [style.width]="getItemPosition(item).width"
-                [style.height]="getItemPosition(item).height"
-                [style.background-color]="item.color || (getGroupById(item.groupId || 'default')?.color || '#4285f4')"
-                [class.agenda-item-selected]="selectedItem === item"
-                (click)="selectItem(item)">
-              <div class="agenda-item-content">
-                <div class="agenda-item-title">{{ item.title }}</div>
-                <div class="agenda-item-time">
-                  {{ item.startTime | date:'HH:mm' }} - {{ item.endTime | date:'HH:mm' }}
+     <div class="agenda-row"
+       [ngClass]="{ 'main-group-row': rowInfo.level === 0, 'subgroup-row': rowInfo.level === 1, 'has-expanded': rowHasExpanded(rowInfo) }">
+          <div class="time-grid-lines">
+            <div class="time-line" *ngFor="let _ of timeSlotsArray"></div>
+          </div>
+
+    <div class="agenda-item"
+               *ngFor="let item of getItemsForRow(rowInfo)"
+               [attr.data-item-id]="item.id"
+      [style.left]="isItemExpanded(item) ? null : getItemPosition(item).left"
+      [style.width]="isItemExpanded(item) ? null : getItemPosition(item).width"
+      [style.--item-left]="getItemPosition(item).left"
+               [style.background-color]="item.color || rowInfo.color || '#4285f4'"
+               [class.is-expanded]="isItemExpanded(item)"
+               (click)="onItemClick(item, $event)"
+               (dblclick)="onItemDoubleClick(item, $event)"
+               [attr.aria-expanded]="isItemExpanded(item)">
+            <div class="agenda-item-content">
+              <div class="agenda-item-title">{{ item.title }}</div>
+              <div class="agenda-item-time" *ngIf="isItemExpanded(item)">
+                {{ item.startTime | date:'HH:mm' }} - {{ item.endTime | date:'HH:mm' }}
+              </div>
+              <div class="agenda-item-extra" *ngIf="isItemExpanded(item)">
+                <div class="agenda-item-description" *ngIf="item.description">{{ item.description }}</div>
+                <div class="agenda-item-meta">
+                  <span class="label">Grupo:</span>
+                  <span>{{ getGroupName(item.groupId) }}</span>
                 </div>
-                <div class="agenda-item-description" *ngIf="item.description">
-                  {{ item.description }}
+                <div class="agenda-item-meta" *ngIf="item.subgroupId">
+                  <span class="label">Subgrupo:</span>
+                  <span>{{ getSubgroupName(item.groupId, item.subgroupId) }}</span>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Card expandido (overlay) -->
+  <div class="expanded-card-overlay" *ngIf="selectedItem" (click)="deselectItem()">
+    <div class="expanded-card"
+         [style.background-color]="selectedItem.color || getRowInfo(selectedItem)?.color || '#4285f4'"
+         (click)="$event.stopPropagation()">
+      <div class="expanded-card-content">
+        <div class="expanded-card-title">{{ selectedItem.title }}</div>
+        <div class="expanded-details">
+          <div class="detail-row">
+            <strong>Horário:</strong> {{ selectedItem.startTime | date:'HH:mm' }} - {{ selectedItem.endTime | date:'HH:mm' }} ({{ getItemDuration(selectedItem) }})
+          </div>
+          <div class="detail-row" *ngIf="selectedItem.description">
+            <strong>Descrição:</strong>
+            <div class="description-content">{{ selectedItem.description }}</div>
+          </div>
+          <div class="detail-row">
+            <strong>Grupo:</strong> {{ getGroupName(selectedItem.groupId) }}
+          </div>
+          <div class="detail-row" *ngIf="selectedItem.subgroupId">
+            <strong>Subgrupo:</strong> {{ getSubgroupName(selectedItem.groupId, selectedItem.subgroupId) }}
           </div>
         </div>
       </div>

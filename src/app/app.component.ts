@@ -16,86 +16,108 @@ export class AppComponent {
     timeInterval: 60,
     showGroups: true,
     showSubgroups: true,
-    showSubSubgroups: true
+    showSubSubgroups: false // Desabilitando o terceiro nível
   };
 
-  // Grupos de exemplo com subgrupos
+  // Grupos de exemplo com apenas 2 níveis
   agendaGroups: AgendaGroup[] = [
     { 
       id: 'grupo1', 
-      name: 'Grupo 1', 
+      name: 'Desenvolvimento', 
       color: '#4285f4',
       subgroups: [
         { 
           id: 'subgrupo1a', 
-          name: 'Subgrupo 1A', 
+          name: 'Frontend', 
           color: '#5c9aff', 
-          groupId: 'grupo1',
-          subSubgroups: [
-            { id: 'sub1a1', name: 'Sub 1A1', color: '#7eb1ff', subgroupId: 'subgrupo1a' },
-            { id: 'sub1a2', name: 'Sub 1A2', color: '#7eb1ff', subgroupId: 'subgrupo1a' }
-          ]
+          groupId: 'grupo1'
         },
         { 
           id: 'subgrupo1b', 
-          name: 'Subgrupo 1B', 
+          name: 'Backend', 
           color: '#5c9aff', 
-          groupId: 'grupo1',
-          subSubgroups: [
-            { id: 'sub1b1', name: 'Sub 1B1', color: '#7eb1ff', subgroupId: 'subgrupo1b' }
-          ]
+          groupId: 'grupo1'
+        },
+        {
+          id: 'subgrupo1c',
+          name: 'DevOps',
+          color: '#5c9aff',
+          groupId: 'grupo1'
         }
       ]
     },
     { 
       id: 'grupo2', 
-      name: 'Grupo 2', 
+      name: 'Marketing', 
       color: '#34a853',
       subgroups: [
         { 
           id: 'subgrupo2a', 
-          name: 'Subgrupo 2A', 
+          name: 'Digital', 
           color: '#4eca6a', 
-          groupId: 'grupo2',
-          subSubgroups: [
-            { id: 'sub2a1', name: 'Sub 2A1', color: '#68e282', subgroupId: 'subgrupo2a' },
-            { id: 'sub2a2', name: 'Sub 2A2', color: '#68e282', subgroupId: 'subgrupo2a' },
-            { id: 'sub2a3', name: 'Sub 2A3', color: '#68e282', subgroupId: 'subgrupo2a' }
-          ]
+          groupId: 'grupo2'
+        },
+        {
+          id: 'subgrupo2b',
+          name: 'Conteúdo',
+          color: '#4eca6a',
+          groupId: 'grupo2'
+        },
+        {
+          id: 'subgrupo2c',
+          name: 'Eventos',
+          color: '#4eca6a',
+          groupId: 'grupo2'
         }
       ]
     },
     { 
       id: 'grupo3', 
-      name: 'Grupo 3', 
+      name: 'Recursos Humanos', 
       color: '#fbbc05',
       subgroups: [
         { 
           id: 'subgrupo3a', 
-          name: 'Subgrupo 3A', 
+          name: 'Recrutamento', 
           color: '#ffd04c', 
-          groupId: 'grupo3',
-          subSubgroups: [
-            { id: 'sub3a1', name: 'Sub 3A1', color: '#ffe07f', subgroupId: 'subgrupo3a' }
-          ]
+          groupId: 'grupo3'
         },
         { 
           id: 'subgrupo3b', 
-          name: 'Subgrupo 3B', 
+          name: 'Treinamento', 
           color: '#ffd04c', 
           groupId: 'grupo3' 
         },
         { 
           id: 'subgrupo3c', 
-          name: 'Subgrupo 3C', 
+          name: 'Benefícios', 
           color: '#ffd04c', 
           groupId: 'grupo3' 
+        }
+      ]
+    },
+    {
+      id: 'grupo4',
+      name: 'Vendas',
+      color: '#ea4335',
+      subgroups: [
+        {
+          id: 'subgrupo4a',
+          name: 'Prospecção',
+          color: '#ff6b6b',
+          groupId: 'grupo4'
+        },
+        {
+          id: 'subgrupo4b',
+          name: 'Negociação',
+          color: '#ff6b6b',
+          groupId: 'grupo4'
         }
       ]
     }
   ];
 
-  // Compromissos de exemplo com subgrupos
+  // Agendamentos de exemplo com apenas 2 níveis
   agendaItems: AgendaItem[] = [
     {
       id: '1',
@@ -104,73 +126,104 @@ export class AppComponent {
       startTime: new Date(new Date().setHours(9, 0, 0, 0)),
       endTime: new Date(new Date().setHours(10, 30, 0, 0)),
       groupId: 'grupo1',
-      subgroupId: 'subgrupo1a',
-      subSubgroupId: 'sub1a1'
+      subgroupId: 'subgrupo1a'
     },
     {
       id: '2',
-      title: 'Entrevista',
+      title: 'Entrevista Técnica',
       description: 'Entrevista com candidato para vaga de desenvolvedor',
       startTime: new Date(new Date().setHours(11, 0, 0, 0)),
       endTime: new Date(new Date().setHours(12, 0, 0, 0)),
-      groupId: 'grupo2',
-      subgroupId: 'subgrupo2a',
-      subSubgroupId: 'sub2a1'
+      groupId: 'grupo3',
+      subgroupId: 'subgrupo3a'
     },
     {
       id: '3',
-      title: 'Almoço',
+      title: 'Deploy Produção',
+      description: 'Implementação da nova versão',
       startTime: new Date(new Date().setHours(12, 0, 0, 0)),
       endTime: new Date(new Date().setHours(13, 0, 0, 0)),
       groupId: 'grupo1',
-      subgroupId: 'subgrupo1b',
-      subSubgroupId: 'sub1b1'
+      subgroupId: 'subgrupo1c'
     },
     {
       id: '4',
-      title: 'Apresentação',
-      description: 'Apresentação do novo produto',
+      title: 'Apresentação Campanha',
+      description: 'Apresentação da nova campanha de marketing',
       startTime: new Date(new Date().setHours(14, 0, 0, 0)),
       endTime: new Date(new Date().setHours(15, 30, 0, 0)),
-      groupId: 'grupo3',
-      subgroupId: 'subgrupo3a',
-      subSubgroupId: 'sub3a1'
+      groupId: 'grupo2',
+      subgroupId: 'subgrupo2a'
     },
     {
       id: '5',
-      title: 'Manutenção',
-      description: 'Manutenção programada do sistema',
+      title: 'Revisão API',
+      description: 'Revisão da nova API de pagamentos',
       startTime: new Date(new Date().setHours(16, 0, 0, 0)),
       endTime: new Date(new Date().setHours(17, 0, 0, 0)),
-      groupId: 'grupo2',
-      subgroupId: 'subgrupo2a',
-      subSubgroupId: 'sub2a2'
+      groupId: 'grupo1',
+      subgroupId: 'subgrupo1b'
     },
     {
       id: '6',
-      title: 'Treinamento',
-      description: 'Treinamento da nova equipe',
+      title: 'Treinamento React',
+      description: 'Treinamento da nova equipe em React',
       startTime: new Date(new Date().setHours(9, 30, 0, 0)),
       endTime: new Date(new Date().setHours(11, 0, 0, 0)),
-      groupId: 'grupo1',
-      subgroupId: 'subgrupo1a',
-      subSubgroupId: 'sub1a2'
-    },
-    {
-      id: '7',
-      title: 'Revisão de Código',
-      description: 'Revisão do código do novo módulo',
-      startTime: new Date(new Date().setHours(13, 0, 0, 0)),
-      endTime: new Date(new Date().setHours(14, 30, 0, 0)),
       groupId: 'grupo3',
       subgroupId: 'subgrupo3b'
     },
     {
+      id: '7',
+      title: 'Criação de Conteúdo',
+      description: 'Brainstorm para novos posts do blog',
+      startTime: new Date(new Date().setHours(13, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(14, 30, 0, 0)),
+      groupId: 'grupo2',
+      subgroupId: 'subgrupo2b'
+    },
+    {
       id: '8',
-      title: 'Planejamento',
-      description: 'Planejamento do próximo sprint',
+      title: 'Negociação Cliente',
+      description: 'Reunião com cliente potencial',
       startTime: new Date(new Date().setHours(15, 0, 0, 0)),
       endTime: new Date(new Date().setHours(16, 0, 0, 0)),
+      groupId: 'grupo4',
+      subgroupId: 'subgrupo4b'
+    },
+    {
+      id: '9',
+      title: 'Planejamento Sprint',
+      description: 'Planejamento do próximo sprint',
+      startTime: new Date(new Date().setHours(10, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(11, 30, 0, 0)),
+      groupId: 'grupo1',
+      subgroupId: 'subgrupo1a'
+    },
+    {
+      id: '10',
+      title: 'Evento Networking',
+      description: 'Organização do evento de networking',
+      startTime: new Date(new Date().setHours(17, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(18, 0, 0, 0)),
+      groupId: 'grupo2',
+      subgroupId: 'subgrupo2c'
+    },
+    {
+      id: '11',
+      title: 'Prospecção Lead',
+      description: 'Ligações para novos leads',
+      startTime: new Date(new Date().setHours(8, 30, 0, 0)),
+      endTime: new Date(new Date().setHours(10, 0, 0, 0)),
+      groupId: 'grupo4',
+      subgroupId: 'subgrupo4a'
+    },
+    {
+      id: '12',
+      title: 'Revisão Benefícios',
+      description: 'Análise dos benefícios oferecidos',
+      startTime: new Date(new Date().setHours(14, 0, 0, 0)),
+      endTime: new Date(new Date().setHours(15, 0, 0, 0)),
       groupId: 'grupo3',
       subgroupId: 'subgrupo3c'
     }

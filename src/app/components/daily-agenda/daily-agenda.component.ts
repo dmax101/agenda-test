@@ -1,5 +1,14 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewInit, HostListener } from '@angular/core';
-import { AgendaItem, AgendaGroup, AgendaConfig, AgendaSubgroup, AgendaSubSubgroup } from '../../models/agenda.model';
+import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { AgendaItem, AgendaGroup, AgendaConfig } from '../../models/agenda.model';
+
+interface RowInfo {
+  id: string;
+  name: string;
+  color?: string;
+  level: number;
+  groupId?: string;
+  subgroupId?: string;
+}
 
 @Component({
   selector: 'app-daily-agenda',
@@ -12,185 +21,183 @@ export class DailyAgendaComponent implements OnInit, AfterViewInit {
   @Input() config: AgendaConfig = {
     startHour: 8,
     endHour: 18,
-    timeInterval: 30,
+    timeInterval: 60,
     showGroups: true,
     showSubgroups: true,
-    showSubSubgroups: true
+    showSubSubgroups: false
   };
 
-  @ViewChild('agendaGrid') agendaGrid!: ElementRef;
+  @ViewChild('agendaWrapper') agendaWrapper!: ElementRef;
+  @ViewChild('timeSlots') timeSlots!: ElementRef;
   
   selectedItem: AgendaItem | null = null;
-  screenWidth: number = window.innerWidth;
-  screenHeight: number = window.innerHeight;
-
-  timeSlots: string[] = [];
-  groupedItems: { [key: string]: AgendaItem[] } = {};
-  
-  @HostListener('window:resize', ['$event'])
-  onResize() {
-    this.screenWidth = window.innerWidth;
-    this.screenHeight = window.innerHeight;
-    this.adjustResponsiveLayout();
-  }
+  timeSlotsArray: string[] = [];
+  orderedRows: RowInfo[] = [];
+  expandedItemId: string | null = null;
   
   ngOnInit(): void {
     this.generateTimeSlots();
-    this.organizeItemsByGroup();
-    this.adjustResponsiveLayout();
-  }
-  
-  private adjustResponsiveLayout(): void {
-    // Ajusta o layout com base no tamanho da tela
-    const container = document.querySelector('.daily-agenda-container') as HTMLElement;
-    if (container) {
-      // Ajusta a altura com base na altura da tela
-      container.style.height = `${this.screenHeight * 0.8}px`;
-    }
+    this.generateOrderedRows();
   }
 
   ngAfterViewInit(): void {
-    // Garantir que o scroll horizontal esteja sincronizado
-    if (this.agendaGrid) {
-      this.syncScrollWithHeader();
-    }
+    // Sincronização inicial do scroll
+    this.onMainScroll();
   }
 
-  // Função para sincronizar o scroll horizontal da grade com o cabeçalho
-  onGridScroll(event: Event): void {
-    const target = event.target as HTMLElement;
-    const timeSlots = document.querySelector('.time-slots') as HTMLElement;
-    
-    if (timeSlots) {
-      timeSlots.scrollLeft = target.scrollLeft;
+  onMainScroll(): void {
+    if (!this.agendaWrapper) {
+      return;
     }
-  }
 
-  // Função para sincronizar o scroll inicial
-  private syncScrollWithHeader(): void {
-    const timeSlots = document.querySelector('.time-slots') as HTMLElement;
-    const agendaGridElement = this.agendaGrid.nativeElement;
-    
-    if (timeSlots && agendaGridElement) {
-      agendaGridElement.addEventListener('scroll', () => {
-        timeSlots.scrollLeft = agendaGridElement.scrollLeft;
-      });
+    const scrollLeft = this.agendaWrapper.nativeElement.scrollLeft;
+
+    // Sincroniza o cabeçalho de tempo
+    if (this.timeSlots) {
+      this.timeSlots.nativeElement.scrollLeft = scrollLeft;
     }
   }
 
   private generateTimeSlots(): void {
-    this.timeSlots = [];
-    for (let hour = this.config.startHour; hour <= this.config.endHour; hour++) {
+    this.timeSlotsArray = [];
+    for (let hour = this.config.startHour; hour < this.config.endHour; hour++) {
       const formattedHour = hour.toString().padStart(2, '0');
+      this.timeSlotsArray.push(`${formattedHour}:00`);
       
-      if (this.config.timeInterval === 60) {
-        this.timeSlots.push(`${formattedHour}:00`);
-      } else {
-        this.timeSlots.push(`${formattedHour}:00`);
-        
+      if (this.config.timeInterval < 60) {
         for (let minute = this.config.timeInterval; minute < 60; minute += this.config.timeInterval) {
-          this.timeSlots.push(`${formattedHour}:${minute.toString().padStart(2, '0')}`);
+          this.timeSlotsArray.push(`${formattedHour}:${minute.toString().padStart(2, '0')}`);
         }
       }
     }
   }
 
-  private organizeItemsByGroup(): void {
-    this.groupedItems = {};
-    
-    // Inicializa grupos, subgrupos e sub-subgrupos vazios
-    if (this.config.showGroups && this.groups.length > 0) {
-      this.groups.forEach(group => {
-        // Inicializa o grupo principal
-        this.groupedItems[group.id] = [];
-        
-        // Inicializa subgrupos se existirem
-        if (this.config.showSubgroups && group.subgroups && group.subgroups.length > 0) {
-          group.subgroups.forEach(subgroup => {
-            const subgroupKey = `${group.id}_${subgroup.id}`;
-            this.groupedItems[subgroupKey] = [];
-            
-            // Inicializa sub-subgrupos se existirem
-            if (this.config.showSubSubgroups && subgroup.subSubgroups && subgroup.subSubgroups.length > 0) {
-              subgroup.subSubgroups.forEach(subSubgroup => {
-                const subSubgroupKey = `${group.id}_${subgroup.id}_${subSubgroup.id}`;
-                this.groupedItems[subSubgroupKey] = [];
-              });
-            }
-          });
-        }
-      });
-    } else {
-      // Se não houver grupos, usa um grupo padrão
-      this.groupedItems['default'] = [];
+  private generateOrderedRows(): void {
+    this.orderedRows = [];
+    if (!this.config.showGroups || this.groups.length === 0) {
+      this.orderedRows.push({ id: 'default', name: 'Agendamentos', level: 0 });
+      return;
     }
-    
-    // Organiza os itens por grupo, subgrupo e sub-subgrupo
-    this.items.forEach(item => {
-      let key = 'default';
-      
-      if (item.groupId) {
-        key = item.groupId;
-        
-        if (item.subgroupId) {
-          key = `${item.groupId}_${item.subgroupId}`;
-          
-          if (item.subSubgroupId) {
-            key = `${item.groupId}_${item.subgroupId}_${item.subSubgroupId}`;
-          }
-        }
+
+    this.groups.forEach(group => {
+      this.orderedRows.push({
+        id: group.id,
+        name: group.name,
+        color: group.color,
+        level: 0,
+        groupId: group.id
+      });
+
+      if (this.config.showSubgroups && group.subgroups) {
+        group.subgroups.forEach(subgroup => {
+          this.orderedRows.push({
+            id: `${group.id}_${subgroup.id}`,
+            name: subgroup.name,
+            color: subgroup.color || group.color,
+            level: 1,
+            groupId: group.id,
+            subgroupId: subgroup.id
+          });
+        });
       }
-      
-      if (!this.groupedItems[key]) {
-        this.groupedItems[key] = [];
-      }
-      
-      this.groupedItems[key].push(item);
     });
   }
 
-  getItemPosition(item: AgendaItem): { top: string, left: string, width: string, height: string } {
-    // Calcula a posição do item na grade com base no horário de início e fim
+  getItemsForRow(rowInfo: RowInfo): AgendaItem[] {
+    return this.items.filter(item => {
+      if (rowInfo.id === 'default') return !item.groupId;
+
+      if (rowInfo.level === 0) {
+        return item.groupId === rowInfo.groupId && !item.subgroupId;
+      }
+      if (rowInfo.level === 1) {
+        return item.groupId === rowInfo.groupId && item.subgroupId === rowInfo.subgroupId;
+      }
+      return false;
+    });
+  }
+
+  getItemPosition(item: AgendaItem): { left: string, width: string } {
+    const totalMinutes = (this.config.endHour - this.config.startHour) * 60;
+    const slotDuration = 60 / (60 / this.config.timeInterval);
+    const totalSlots = totalMinutes / slotDuration;
+
     const startTime = new Date(item.startTime);
     const endTime = new Date(item.endTime);
-    
-    const startHour = startTime.getHours();
-    const startMinute = startTime.getMinutes();
-    const endHour = endTime.getHours();
-    const endMinute = endTime.getMinutes();
-    
-    // Calcula a posição vertical (top) com base no horário de início
-    const startTimeInMinutes = (startHour - this.config.startHour) * 60 + startMinute;
-    const totalMinutesInDay = (this.config.endHour - this.config.startHour) * 60;
-    
-    // Calcula a posição horizontal (left) com base no número de slots de tempo
-    const slotWidth = 80; // Largura de cada slot de tempo em pixels
-    const leftPosition = (startTimeInMinutes / this.config.timeInterval) * slotWidth;
-    
-    // Calcula a altura com base na duração do compromisso
-    const durationInMinutes = ((endHour - startHour) * 60) + (endMinute - startMinute);
-    
-    // Garantir uma altura mínima para evitar corte de texto
-    const minHeightInMinutes = 30; // Altura mínima de 30 minutos
-    const effectiveDuration = Math.max(durationInMinutes, minHeightInMinutes);
-    
-    // Calcula a largura com base na duração
-    const widthInSlots = durationInMinutes / this.config.timeInterval;
-    const widthInPixels = widthInSlots * slotWidth;
-    
+
+    const startMinutes = (startTime.getHours() - this.config.startHour) * 60 + startTime.getMinutes();
+    const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+
+    const leftPercent = (startMinutes / totalMinutes) * 100;
+    const widthPercent = (durationMinutes / totalMinutes) * 100;
+
     return {
-      top: '5px', // Posição fixa no topo da linha
-      left: `${leftPosition}px`,
-      width: `${widthInPixels - 10}px`, // Subtrai 10px para margens
-      height: 'calc(100% - 10px)' // Altura fixa com margem
+      left: `${leftPercent}%`,
+      width: `${widthPercent}%`
     };
   }
 
-  getGroupById(groupId: string): AgendaGroup | undefined {
-    return this.groups.find(group => group.id === groupId);
+  onItemClick(item: AgendaItem, event: MouseEvent): void {
+    event.stopPropagation();
+
+    if (event.detail > 1) {
+      return;
+    }
+
+    this.expandedItemId = this.expandedItemId === item.id ? null : item.id;
   }
-  
-  selectItem(item: AgendaItem): void {
+
+  onItemDoubleClick(item: AgendaItem, event: MouseEvent): void {
+    event.stopPropagation();
+    this.expandedItemId = item.id;
     this.selectedItem = item;
+  }
+
+  deselectItem(): void {
+    this.selectedItem = null;
+    this.expandedItemId = null;
+  }
+
+  getItemDuration(item: AgendaItem): string {
+    const durationMs = new Date(item.endTime).getTime() - new Date(item.startTime).getTime();
+    const minutes = Math.floor(durationMs / 60000);
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  }
+
+  getGroupName(groupId: string | undefined): string {
+    if (!groupId) return 'N/A';
+    return this.groups.find(g => g.id === groupId)?.name || 'N/A';
+  }
+
+  getSubgroupName(groupId: string | undefined, subgroupId: string | undefined): string {
+    if (!groupId || !subgroupId) return 'N/A';
+    const group = this.groups.find(g => g.id === groupId);
+    return group?.subgroups?.find(s => s.id === subgroupId)?.name || 'N/A';
+  }
+
+  getRowInfo(item: AgendaItem): RowInfo | undefined {
+    return this.orderedRows.find(r => {
+      if (item.subgroupId) {
+        return r.groupId === item.groupId && r.subgroupId === item.subgroupId;
+      }
+      if (item.groupId) {
+        return r.groupId === item.groupId && r.level === 0;
+      }
+      return r.id === 'default';
+    });
+  }
+
+  isItemExpanded(item: AgendaItem): boolean {
+    return this.expandedItemId === item.id;
+  }
+
+  rowHasExpanded(rowInfo: RowInfo): boolean {
+    if (!this.expandedItemId) {
+      return false;
+    }
+
+    return this.getItemsForRow(rowInfo).some(item => item.id === this.expandedItemId);
   }
 }
